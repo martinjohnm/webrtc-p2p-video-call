@@ -1,14 +1,22 @@
 
 
-import { useSocket } from "../hooks/useSocket"
-
+import { useEffect, useState } from "react";
 
 
 export const Sender = () => {
 
-    const socket = useSocket()
+    const [socket, setSocket] = useState<WebSocket | null>(null)
 
-    
+
+    useEffect(() => {
+        const socket = new WebSocket("ws://localhost:8080")
+
+        socket.onopen = () => {
+            socket.send(JSON.stringify({ type : "sender"}))
+        }
+
+        setSocket(socket)
+    }, [])
 
     async function startSendingVideo () {
 
@@ -16,20 +24,23 @@ export const Sender = () => {
 
         // create offer
         const pc = new RTCPeerConnection()
-        const offer = await pc.createOffer()
+        const offer = await pc.createOffer(); // creates and sdp here
         await pc.setLocalDescription(offer)
-        socket?.send(JSON.stringify( { type : "createOffer", sdp : pc.localDescription}))
+        socket.send(JSON.stringify({ type : "createOffer", sdp : pc.localDescription }))
 
         socket.onmessage = (event : any) => {
             const data = JSON.parse(event.data)
-
-            if (data.type === "createAnswer") {
+         
+            if ( data.type === "createAnswer") {
                 pc.setRemoteDescription(data.sdp)
             }
         }
     }
     return <div>
-        Sender
-        <button onClick={startSendingVideo}>Send video</button>
+        <div className="max-w-5xl container mx-auto">
+            <div className="flex justify-center items-center h-screen">
+                <button className="bg-green-500 px-5 py-2 rounded-md text-black" onClick={startSendingVideo}>Send video</button>
+            </div>
+        </div>
     </div>
 }
